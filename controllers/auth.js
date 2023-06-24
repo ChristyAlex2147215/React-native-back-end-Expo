@@ -213,6 +213,7 @@ export const updatePassword = async (req, res) => {
 export const uploadImage=async(req,res)=>
 {
   try {
+    console.log("full req obtained=>",req.body)
     const { email, image } = req.body;
     console.log("Email=>",email)
     console.log("Image=>",image)

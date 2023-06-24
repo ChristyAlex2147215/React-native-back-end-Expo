@@ -2,11 +2,13 @@ const cloudinary = require("cloudinary").v2;
 
 export const clodinaryImageUpload=async(image)=>
 {
+  console.log("opening the cloudinary function")
     cloudinary.config({ 
         cloud_name:process.env.CLOUDINARY_NAME, 
         api_key: process.env.CLOUDINARY_KEY, 
         api_secret: process.env.CLOUDINARY_SECRET
       });
+      console.log("Done setting up the configration")
       try {
         const uploadResult = await cloudinary.uploader.upload(image, {
           folder: "server-uploads", // Optional: specify a folder in Cloudinary to store the image
