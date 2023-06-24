@@ -3,6 +3,7 @@ import User from "../models/user";
 import { hashPassword, comparePassword } from "../helpers/auth";
 import jwt from "jsonwebtoken";
 import nanoid from "nanoid";
+import {clodinaryImageUpload} from "../helpers/clodinary"
 
 // sendgrid
 require("dotenv").config();
@@ -208,3 +209,34 @@ export const updatePassword = async (req, res) => {
     console.log(err);
   }
 };
+
+export const uploadImage=async(req,res)=>
+{
+  try {
+    const { email, image } = req.body;
+    console.log("Email=>",email)
+    console.log("Image=>",image)
+    // find user based on email and resetCode
+    const user = await User.findOne({ email });
+    if(!user)
+    {
+      res.json({error:"unable to find the user, check the email"})
+    }
+    //sending the image to the clodinary for the image upload 
+    const {public_id,secure_url,url}=await clodinaryImageUpload(image)
+    console.log(public_id,"   ",secure_url,"   ",url)
+    // user.image={"public_id":public_id,"url":url}
+    //adding new filed for the image details
+   const updateUser= await User.updateOne(
+      {email: email },
+      { $set:{"image":{"public_id":public_id,"url":secure_url}} }
+    )
+    console.log("updating user",updateUser)
+    res.json({"success":true,"url":url})
+
+  }
+  catch (err) {
+    console.log(err);
+  }
+  
+}
