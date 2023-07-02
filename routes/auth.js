@@ -10,6 +10,7 @@ const {
   forgotPassword,
   resetPassword,
   updatePassword,
+  requireLogin,
   uploadImage
 } = require("../controllers/auth");
 
@@ -22,7 +23,7 @@ router.post("/signup", signup);
 router.post("/signin", signin);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-router.put("/update-password", updatePassword);
-router.post("/upload-image",uploadImage)
+router.put("/update-password",requireLogin,updatePassword);
+router.post("/upload-image",requireLogin,uploadImage)
 
 export default router;

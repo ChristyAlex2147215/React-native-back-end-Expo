@@ -4,6 +4,7 @@ import { hashPassword, comparePassword } from "../helpers/auth";
 import jwt from "jsonwebtoken";
 import nanoid from "nanoid";
 import {clodinaryImageUpload} from "../helpers/clodinary"
+const expressJwt=require("express-jwt")
 
 // sendgrid
 require("dotenv").config();
@@ -138,10 +139,10 @@ export const forgotPassword = async (req, res) => {
   try {
     const data = await sgMail.send(emailData);
     console.log(data);
-    res.json({ ok: true });
+    res.json({ success: true });
   } catch (err) {
     console.log(err);
-    res.json({ ok: false });
+    res.json({ success: false,error:"Failed to send Email" });
   }
 };
 
@@ -175,22 +176,21 @@ export const resetPassword = async (req, res) => {
 };
 export const updatePassword = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log(email)
+    console.log("function update password")
+    console.log(req.body)
+    console.log(req.user)
+    const {password } = req.body;
+    const _id=req.user._id
+    console.log(_id)
     console.log(password)
     // find user based on email and resetCode
-    const user = await User.findOne({ email });
-    // if user not found
-    if (!user) {
-      return res.json({ error: "Email or reset code is invalid" });
-    }
     //if email is not present
-    if(!email)
-    {
-      return res.json({
-        error:"email must be present"
-      })
-    }
+    // if(!email)
+    // {
+    //   return res.json({
+    //     error:"email must be present"
+    //   })
+    // }
     // if password is short
     if (!password || password.length < 6) {
       return res.json({
@@ -200,6 +200,11 @@ export const updatePassword = async (req, res) => {
     // hash password
    
     const hashedPassword = await hashPassword(password);
+    const user = await User.findOneAndUpdate({ _id },{password:hashedPassword});
+    // if user not found
+    if (!user) {
+      return res.json({ error: "Email or reset code is invalid" });
+    }
     console.log("current password is =>",user.password)
     console.log("new password is =>",hashedPassword)
     user.password = hashedPassword;
@@ -212,28 +217,37 @@ export const updatePassword = async (req, res) => {
 
 export const uploadImage=async(req,res)=>
 {
+  console.log("uploading image by user =>",req.user._id)
+  const _id=req.user._id
   try {
     console.log("full req obtained=>",req.body)
-    const { email, image } = req.body;
-    console.log("Email=>",email)
-    console.log("Image=>",image)
+    const { image } = req.body;
+    // console.log("Email=>",email)
+    // console.log("Image=>",image)
     // find user based on email and resetCode
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ _id });
     if(!user)
     {
-      res.json({error:"unable to find the user, check the email"})
+      res.json({error:"unable to find the user, check the _id"})
     }
     //sending the image to the clodinary for the image upload 
     const {public_id,secure_url,url}=await clodinaryImageUpload(image)
+    console.log()
     console.log(public_id,"   ",secure_url,"   ",url)
     // user.image={"public_id":public_id,"url":url}
     //adding new filed for the image details
-   const updateUser= await User.updateOne(
-      {email: email },
-      { $set:{"image":{"public_id":public_id,"url":secure_url}} }
+   const updateUser= await User.findOneAndUpdate(
+      {_id: _id },
+      {"image":{"public_id":public_id,"url":secure_url}},
+      {returnOriginal:false}
+
     )
-    console.log("updating user",updateUser)
-    res.json({"success":true,"url":url})
+    console.log("updating user, user details are =>",updateUser)
+    return res.json(
+      {
+        updateUser
+      })
+    console.log("Reading the response =>", res)
 
   }
   catch (err) {
@@ -241,3 +255,12 @@ export const uploadImage=async(req,res)=>
   }
   
 }
+
+
+// middle ware to check if the use is logged in 
+//addees user._id in the request
+//middle ware will verify the token sent as header from the user
+export const requireLogin=expressJwt({
+  secret: process.env.JWT_SECRET,
+  algorithms: ["HS256"],
+});
